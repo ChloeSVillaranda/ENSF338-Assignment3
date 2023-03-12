@@ -1,6 +1,5 @@
 import json
 import time
-import matplotlib.pyplot as plt
 
 # Load the array from the ex2data.json file
 with open('ex2data.json', 'r') as f:
@@ -10,56 +9,47 @@ with open('ex2data.json', 'r') as f:
 with open('ex2tasks.json', 'r') as f:
     search_tasks = json.load(f)
 
-def binary_search(array, value, start=0, end=None, first_midpoint=None):
-    if end is None:
-        end = len(array) - 1
+# Define the tweaked binary search function
+def binary_search(array, target, start_midpoint=None):
+    low = 0
+    high = len(array) - 1
 
-    if first_midpoint is not None:
-        midpoint = first_midpoint
+    if start_midpoint is not None and start_midpoint >= 0 and start_midpoint <= high:
+        mid = start_midpoint
     else:
-        midpoint = (start + end) // 2
+        # Start the search from the middle of the array
+        mid = len(array) // 2
 
-    if start > end:
-        return None
-    elif array[midpoint] == value:
-        return midpoint
-    elif array[midpoint] < value:
-        return binary_search(array, value, midpoint + 1, end)
-    else:
-        return binary_search(array, value, start, midpoint - 1)
+    while low <= high:
+        if array[mid] == target:
+            return True
+        elif array[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+        mid = (low + high) // 2
 
+    return False
 
-# Create empty lists to store the search values and chosen midpoints
-search_values = []
-chosen_midpoints = []
-
-# Loop over each search task
+# Time the performance of each search task using the tweaked binary search with midpoints at 1/5, 2/5, 3/5, and 4/5 of the array
 for task in search_tasks:
-    # Get the search value and the range of valid midpoints
-    search_value = task['value']
-    midpoint_range = task['midpoint_range']
-
-    # Time the performance of each midpoint in the range
-    best_time = float('inf')
     best_midpoint = None
-    for midpoint in range(*midpoint_range):
-        start_time = time.time()
-        result = binary_search(array, search_value, first_midpoint=midpoint)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
+    best_time = float('inf')
+    found = False
 
-        # Update the best midpoint if this one is faster
-        if elapsed_time < best_time:
-            best_time = elapsed_time
-            best_midpoint = midpoint
+    midpoints = [len(array)//5, 2*len(array)//5, 3*len(array)//5, 4*len(array)//5]
 
-    # Append the search value and best midpoint to the lists
-    search_values.append(search_value)
-    chosen_midpoints.append(best_midpoint)
+    for i, mid in enumerate(midpoints):
+        start_time = time.perf_counter()
+        result = binary_search(array, task, start_midpoint=mid)
+        end_time = time.perf_counter()
 
-# Create a scatterplot of search values and chosen midpoints
-plt.scatter(search_values, chosen_midpoints)
-plt.xlabel('Search Value')
-plt.ylabel('Chosen Midpoint')
-plt.title('Best Midpoints for Search Tasks')
-plt.show()
+        if end_time - start_time < best_time:
+            best_time = end_time - start_time
+            best_midpoint = f"{i+1}/5"
+
+        if result:
+            found = True
+            break
+
+    print(f"Search for {task}: {'Found' if found else 'Not Found'} (Best Midpoint: {best_midpoint}, Best Time: {best_time:.6f} seconds)")
